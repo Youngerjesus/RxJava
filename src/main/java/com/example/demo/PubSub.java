@@ -1,20 +1,77 @@
 package com.example.demo;
 
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
-import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class PubSub {
     public static void main(String[] args) {
-        Iterable<Integer> iter = Arrays.asList(1, 2, 3, 4, 5);
+        Stream<Integer> iter2 = Stream.iterate(1, a -> a + 1).limit(10);
 
-        Publisher p = new Publisher() {
+        Publisher p = iterPub(iter2);
+        Publisher<Integer> mapPub = mapPub(p, s -> s * 10);
+        Publisher<Integer> mapPub2 = mapPub(mapPub, s -> -s);
+
+        mapPub2.subscribe(logSub());
+    }
+
+    private static Publisher<Integer> mapPub(Publisher<Integer> pub, Function<Integer, Integer> f) {
+        return new Publisher<Integer>() {
+
+            @Override
+            public void subscribe(Subscriber<? super Integer> subscriber) {
+                pub.subscribe(new DelegateSub(subscriber) {
+                    @Override
+                    public void onNext(Integer item) {
+                        subscriber.onNext(f.apply(item));
+                    }
+                });
+            }
+        };
+    }
+
+    private static Subscriber<Integer> logSub() {
+        Subscriber<Integer> s = new Subscriber<Integer>() {
+            Subscription subscription;
+            int bufferSize = 2;
+
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                System.out.println("onSubscribe");
+                this.subscription = subscription;
+                subscription.request(2);
+            }
+
+            @Override
+            public void onNext(Integer item) {
+                System.out.println("onNext " + item);
+
+                if (--bufferSize <= 0) {
+                    bufferSize = 2;
+                    this.subscription.request(2);
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.out.println("onError");
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println("onComplete");
+            }
+        };
+        return s;
+    }
+
+    private static Publisher iterPub(Stream<Integer> iter) {
+        return new Publisher() {
             Iterator<Integer> it = iter.iterator();
             ExecutorService es = Executors.newFixedThreadPool(2);
 
@@ -47,39 +104,5 @@ public class PubSub {
                 });
             }
         };
-
-        Subscriber<Integer> s = new Subscriber<Integer>() {
-            Subscription subscription;
-
-            @Override
-            public void onSubscribe(Subscription subscription) {
-                System.out.println("onSubscribe");
-                this.subscription = subscription;
-                subscription.request(2);
-            }
-
-            int bufferSize = 2;
-            @Override
-            public void onNext(Integer item) {
-                System.out.println("onNext " + item);
-
-                if (--bufferSize <= 0) {
-                    bufferSize = 2;
-                    this.subscription.request(2);
-                }
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                System.out.println("onError");
-            }
-
-            @Override
-            public void onComplete() {
-                System.out.println("onComplete");
-            }
-        };
-
-        p.subscribe(s);
     }
 }

@@ -8,4 +8,8 @@
 
 2) 에러 처리가 없다.
 
+## Etc
 
+- 옵저버 패턴은 Push 방식이고 이터레이터 패턴은 Pull 방식이다.
+- Subscription 을 통해서 Publisher 와 Subscriber 는 연결될 수 있다. 
+- 필요한 콜백은 onSubscribe, onNext, onComplete, onError 가 있다. 여기서 onComplete 와 onError 는 둘 중 하나만 내야한다. 
