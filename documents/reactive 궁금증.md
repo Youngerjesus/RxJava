@@ -5,7 +5,8 @@
 
 ## Reactive 는 Push 방식인가 Pull 방식인가? 
 
-- Push 방식이 될 순 없다. oom 이 날 수 있기 떄문에. 
+- ~~Push 방식이 될 순 없다. oom 이 날 수 있기 떄문에. 
+- push 방식은 맞는데, backpressure 를 적용한것임 
 
 ## Publisher 와 Subscriber 의 연결은 어떻게 되는건가? 
 
